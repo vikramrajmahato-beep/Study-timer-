@@ -1,1 +1,532 @@
 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FocusJEE Pro | Study Timer Edition</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    
+    <!-- Babel -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #000; color: #e2e8f0; }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #0f172a; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        // --- ICONS (Simplified Components) ---
+        const IconBase = ({ children, size = 24, className = "", fill = "none" }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill={fill} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                {children}
+            </svg>
+        );
+
+        const Icons = {
+            Menu: (p) => <IconBase {...p}><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="18" x2="20" y2="18"/></IconBase>,
+            X: (p) => <IconBase {...p}><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></IconBase>,
+            BookOpen: (p) => <IconBase {...p}><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></IconBase>,
+            Lock: (p) => <IconBase {...p}><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></IconBase>,
+            Layout: (p) => <IconBase {...p}><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></IconBase>,
+            Folder: (p) => <IconBase {...p}><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></IconBase>,
+            FolderPlus: (p) => <IconBase {...p}><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/><line x1="12" y1="11" x2="12" y2="17"/><line x1="9" y1="14" x2="15" y2="14"/></IconBase>,
+            Trash2: (p) => <IconBase {...p}><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></IconBase>,
+            Settings: (p) => <IconBase {...p}><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></IconBase>,
+            Play: (p) => <IconBase {...p} fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></IconBase>,
+            CheckCircle2: (p) => <IconBase {...p}><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></IconBase>,
+            Search: (p) => <IconBase {...p}><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></IconBase>,
+            AlertCircle: (p) => <IconBase {...p}><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></IconBase>,
+            Loader2: (p) => <IconBase {...p} className={`animate-spin ${p.className || ""}`}><path d="M21 12a9 9 0 1 1-6.219-8.56"/></IconBase>,
+            Plus: (p) => <IconBase {...p}><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></IconBase>,
+            ListVideo: (p) => <IconBase {...p}><path d="M12 12H3"/><path d="M16 6H3"/><path d="M12 18H3"/><path d="M21 12h-6"/><path d="M15 13v-2l3.5-2 3.5 2v2l-3.5 2z"/></IconBase>,
+            List: (p) => <IconBase {...p}><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></IconBase>,
+            Clock: (p) => <IconBase {...p}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></IconBase>,
+            Coffee: (p) => <IconBase {...p}><path d="M17 8h1a4 4 0 1 1 0 8h-1"/><path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></IconBase>
+        };
+
+        const STORAGE_KEY = "focus_jee_pro_v5_data_safe";
+        
+        // --- CONSTANTS ---
+        const STUDY_GOAL_SECONDS = 4 * 60 * 60; // 4 Hours
+        const RELAX_DURATION_SECONDS = 30 * 60; // 30 Minutes
+        
+        // --- DOMAIN SETTINGS ---
+        const EMBED_DOMAINS = [
+            { id: 'youtube-nocookie', name: 'YouTube (Privacy)', base: 'https://www.youtube-nocookie.com/embed/' },
+            { id: 'yewtu', name: 'Invidious (yewtu.be)', base: 'https://yewtu.be/embed/' },
+            { id: 'piped', name: 'Piped (piped.video)', base: 'https://piped.video/embed/' },
+            { id: 'youtube', name: 'YouTube (Standard)', base: 'https://www.youtube.com/embed/' }
+        ];
+
+        // --- RELEVANCE ENGINE ---
+        const JEE_KEYWORDS = [
+            "jee", "iit", "mains", "advanced", "physics", "chemistry", "math", "maths", 
+            "calculus", "algebra", "trigonometry", "mechanics", "kinematics", "thermodynamics", 
+            "optics", "electrostatics", "magnetism", "organic", "inorganic", "physical chemistry", 
+            "ncert", "cbse", "exam", "study", "lecture", "oneshot", "pyq", "revision", 
+            "class 11", "class 12", "notes", "strategy", "syllabus", "solution", "sprint", 
+            "motion", "vectors", "units", "dimensions", "work energy", "power", "rotation", "gravitation"
+        ];
+        
+        const BLOCKED_KEYWORDS = [
+            "game", "gameplay", "trailer", "song", "movie", "prank", "comedy", "roast", 
+            "vlog", "dance", "music", "reaction", "challenge", "minecraft", "valorant", "bgmi"
+        ];
+
+        const checkRelevance = (title, channel) => {
+            const lowerTitle = title.toLowerCase();
+            const lowerChannel = channel.toLowerCase();
+            
+            if (lowerChannel.includes("jee wallah") || lowerChannel.includes("physics wallah") || lowerChannel.includes("pw")) {
+                return { allowed: true, reason: "Verified Trusted Channel" };
+            }
+            const blockMatch = BLOCKED_KEYWORDS.find(k => lowerTitle.includes(k));
+            if (blockMatch) return { allowed: false, reason: `Detected non-academic keyword: "${blockMatch}"` };
+            const relevantMatch = JEE_KEYWORDS.find(k => lowerTitle.includes(k));
+            if (relevantMatch) return { allowed: true, reason: `Relevant topic found: "${relevantMatch}"` };
+            return { allowed: false, reason: "No JEE syllabus keywords found in title." };
+        };
+
+        // --- HELPERS ---
+        const formatTime = (totalSeconds) => {
+            const h = Math.floor(totalSeconds / 3600);
+            const m = Math.floor((totalSeconds % 3600) / 60);
+            const s = totalSeconds % 60;
+            if (h > 0) return `${h}h ${m}m ${s}s`;
+            return `${m}m ${s}s`;
+        };
+
+        // --- COMPONENTS ---
+
+        const ProgressBar = ({ current, max, isRelax }) => {
+            const percent = Math.min((current / max) * 100, 100);
+            return (
+                <div className="w-full bg-slate-800 rounded-full h-2 mt-2 overflow-hidden">
+                    <div 
+                        className={`h-full transition-all duration-1000 ${isRelax ? 'bg-green-500 animate-pulse' : 'bg-yellow-500'}`} 
+                        style={{ width: `${percent}%` }}
+                    ></div>
+                </div>
+            );
+        };
+
+        const Sidebar = ({ folders, activeFolder, setActiveFolder, onCreateFolder, onDeleteFolder, showMobile, onCloseMobile, onOpenSettings, stats }) => (
+            <div className={`fixed inset-y-0 left-0 z-40 w-64 bg-slate-950 border-r border-slate-800 transform transition-transform duration-300 ease-in-out ${showMobile ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0 flex flex-col`}>
+                <div className="p-6 flex items-center justify-between">
+                    <h1 className="text-xl font-bold bg-gradient-to-r from-yellow-400 to-orange-500 bg-clip-text text-transparent flex items-center gap-2">
+                        <Icons.BookOpen size={24} className="text-yellow-400" />
+                        FocusJEE <span className="text-xs bg-slate-800 text-slate-400 px-1 rounded">PRO</span>
+                    </h1>
+                    <button onClick={onCloseMobile} className="md:hidden text-slate-400 hover:text-white">
+                        <Icons.X size={20} />
+                    </button>
+                </div>
+
+                <div className="px-4 mb-6">
+                    <div className={`p-4 rounded-lg border transition-colors ${stats.isRelaxMode ? 'bg-green-900/30 border-green-500/50' : 'bg-slate-900/50 border-slate-800'}`}>
+                        {stats.isRelaxMode ? (
+                            <div>
+                                <p className="text-xs text-green-400 uppercase font-bold mb-1 flex items-center gap-1">
+                                    <Icons.Coffee size={12} /> Relax Mode Active
+                                </p>
+                                <p className="text-2xl font-bold text-white font-mono">{formatTime(stats.relaxTimeLeft)}</p>
+                                <p className="text-[10px] text-green-300 mt-1">Entertainment allowed.</p>
+                                <ProgressBar current={stats.relaxTimeLeft} max={RELAX_DURATION_SECONDS} isRelax={true} />
+                            </div>
+                        ) : (
+                            <div>
+                                <p className="text-xs text-slate-400 uppercase font-bold mb-1 flex items-center gap-1">
+                                    <Icons.Clock size={12} /> Study Streak
+                                </p>
+                                <p className="text-xl font-bold text-white font-mono">{formatTime(stats.studyTime)}</p>
+                                <p className="text-[10px] text-slate-500 mt-1">Target: 4 Hours</p>
+                                <ProgressBar current={stats.studyTime} max={STUDY_GOAL_SECONDS} isRelax={false} />
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+                <div className="px-4 flex-1 overflow-y-auto">
+                    <h2 className="text-xs font-semibold text-slate-600 uppercase tracking-wider mb-3">Library</h2>
+                    <button onClick={() => setActiveFolder('all')} className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors mb-1 ${activeFolder === 'all' ? 'bg-yellow-500/10 text-yellow-500 border border-yellow-500/20' : 'text-slate-400 hover:bg-slate-900 hover:text-white'}`}>
+                        <Icons.Layout size={18} /> All Lectures
+                    </button>
+                    
+                    <div className="mt-6 flex items-center justify-between mb-2">
+                        <h2 className="text-xs font-semibold text-slate-600 uppercase tracking-wider">Folders</h2>
+                        <button onClick={onCreateFolder} className="text-slate-400 hover:text-yellow-500 transition-colors"><Icons.FolderPlus size={16} /></button>
+                    </div>
+                    
+                    <div className="space-y-1">
+                        {folders.map(folder => (
+                            <div key={folder.id} className="group flex items-center justify-between">
+                                <button onClick={() => setActiveFolder(folder.id)} className={`flex-1 flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors ${activeFolder === folder.id ? 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20' : 'text-slate-400 hover:bg-slate-900 hover:text-white'}`}>
+                                    <Icons.Folder size={18} /> <span className="truncate">{folder.name}</span>
+                                </button>
+                                {folder.id !== 'default' && folder.id !== 'phy' && folder.id !== 'chem' && folder.id !== 'math' && (
+                                    <button onClick={(e) => { e.stopPropagation(); onDeleteFolder(folder.id); }} className="opacity-0 group-hover:opacity-100 p-2 text-slate-600 hover:text-red-400 transition-opacity"><Icons.Trash2 size={14} /></button>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+                <div className="p-4 border-t border-slate-900">
+                    <button onClick={onOpenSettings} className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-400 hover:bg-slate-900 hover:text-white transition-colors">
+                        <Icons.Settings size={18} /> Settings & Domain
+                    </button>
+                </div>
+            </div>
+        );
+
+        const VideoPlayer = ({ video, onClose, embedDomain, isRelaxMode }) => {
+            if (!video) return null;
+            
+            const domainObj = EMBED_DOMAINS.find(d => d.id === embedDomain) || EMBED_DOMAINS[0];
+            let embedSrc = video.type === 'playlist' 
+                ? `${domainObj.base}${domainObj.id.includes('youtube') ? 'videoseries?list=' : '?listType=playlist&list='}${video.id}&autoplay=1`
+                : `${domainObj.base}${video.id}?autoplay=1&rel=0&modestbranding=1`;
+
+            return (
+                <div className="fixed inset-0 z-50 bg-black flex flex-col animate-in fade-in duration-200">
+                    <div className={`flex items-center justify-between p-4 border-b ${isRelaxMode ? 'bg-green-950 border-green-900' : 'bg-slate-950 border-slate-900'}`}>
+                        <div className="flex items-center gap-4">
+                            <span className="text-white font-medium flex items-center gap-2">
+                                <span className={`w-2 h-2 rounded-full animate-pulse ${isRelaxMode ? 'bg-green-400' : 'bg-red-500'}`}></span>
+                                {isRelaxMode ? 'Relaxing...' : 'Studying...'}
+                            </span>
+                        </div>
+                        <button onClick={onClose} className="text-slate-400 hover:text-white flex items-center gap-2 px-4 py-2 bg-black/20 rounded-lg hover:bg-black/40 transition-colors">
+                            <Icons.X size={18} /> Close
+                        </button>
+                    </div>
+                    <div className="flex-1 flex items-center justify-center bg-black">
+                        <iframe src={embedSrc} className="w-full h-full max-w-7xl aspect-video border-0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen></iframe>
+                    </div>
+                </div>
+            );
+        };
+
+        const AddModal = ({ isOpen, onClose, onAdd, folders, loading, error, isRelaxMode }) => {
+            const [url, setUrl] = useState('');
+            const [selectedFolder, setSelectedFolder] = useState('default');
+            const [inputType, setInputType] = useState('video');
+
+            if (!isOpen) return null;
+
+            return (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm p-4">
+                    <div className={`bg-slate-950 border rounded-xl w-full max-w-md shadow-2xl ${isRelaxMode ? 'border-green-500/50' : 'border-slate-800'}`}>
+                        <div className="p-6 border-b border-slate-900 flex justify-between items-center">
+                            <h2 className={`text-xl font-bold flex items-center gap-2 ${isRelaxMode ? 'text-green-400' : 'text-white'}`}>
+                                <Icons.Plus size={20} /> {isRelaxMode ? 'Add Relax Content' : 'Add Study Content'}
+                            </h2>
+                            <button onClick={onClose} className="text-slate-500 hover:text-white"><Icons.X size={20}/></button>
+                        </div>
+                        <form onSubmit={(e) => { e.preventDefault(); onAdd(url, selectedFolder, inputType); }} className="p-6 space-y-4">
+                            <div className="flex gap-2 p-1 bg-slate-900 rounded-lg border border-slate-800">
+                                <button type="button" onClick={() => setInputType('video')} className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${inputType === 'video' ? 'bg-slate-800 text-white shadow' : 'text-slate-500 hover:text-slate-300'}`}>Single Video</button>
+                                <button type="button" onClick={() => setInputType('playlist')} className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${inputType === 'playlist' ? 'bg-slate-800 text-white shadow' : 'text-slate-500 hover:text-slate-300'}`}>Playlist</button>
+                            </div>
+                            <div>
+                                <label className="block text-xs font-medium text-slate-400 mb-1">{inputType === 'playlist' ? 'Playlist URL' : 'Video URL'}</label>
+                                <input type="text" value={url} onChange={(e) => setUrl(e.target.value)} placeholder="Paste URL here..." className="w-full bg-slate-900 border border-slate-800 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-yellow-500" required />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-medium text-slate-400 mb-1">Assign to Folder</label>
+                                <select value={selectedFolder} onChange={(e) => setSelectedFolder(e.target.value)} className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-3 text-white focus:outline-none focus:border-yellow-500">
+                                    {folders.map(f => (<option key={f.id} value={f.id}>{f.name}</option>))}
+                                </select>
+                            </div>
+                            {error && <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-xs flex gap-2"><Icons.AlertCircle size={14} className="mt-0.5" /><span>{error}</span></div>}
+                            <button type="submit" disabled={loading} className={`w-full text-white font-bold py-3 rounded-lg flex items-center justify-center gap-2 ${isRelaxMode ? 'bg-green-600 hover:bg-green-700' : 'bg-yellow-600 hover:bg-yellow-700'}`}>
+                                {loading ? <Icons.Loader2 size={18} /> : <Icons.Plus size={18} />} {loading ? 'Checking...' : 'Add to Library'}
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            );
+        };
+        
+        const SettingsModal = ({ isOpen, onClose, currentDomain, setDomain }) => {
+            if (!isOpen) return null;
+            return (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm p-4">
+                    <div className="bg-slate-950 border border-slate-800 rounded-xl w-full max-w-md shadow-2xl">
+                        <div className="p-6 border-b border-slate-900 flex justify-between items-center">
+                            <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                                <Icons.Settings size={20} className="text-yellow-500"/> App Settings
+                            </h2>
+                            <button onClick={onClose} className="text-slate-500 hover:text-white"><Icons.X size={20}/></button>
+                        </div>
+                        <div className="p-6 space-y-6">
+                            <div>
+                                <label className="block text-sm font-medium text-slate-300 mb-4">Video Playback Domain</label>
+                                <div className="space-y-2">
+                                    {EMBED_DOMAINS.map(domain => (
+                                        <button key={domain.id} onClick={() => setDomain(domain.id)} className={`w-full flex items-center justify-between p-4 rounded-lg border transition-all ${currentDomain === domain.id ? 'bg-yellow-500/10 border-yellow-500 text-yellow-500' : 'bg-slate-900 border-slate-800 text-slate-400 hover:border-slate-700'}`}>
+                                            <span className="font-medium">{domain.name}</span>
+                                            {currentDomain === domain.id && <Icons.CheckCircle2 size={18} />}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                        <div className="p-6 border-t border-slate-900">
+                            <button onClick={onClose} className="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-3 rounded-lg transition-colors">Save & Close</button>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const App = () => {
+            const [videos, setVideos] = useState([]);
+            const [folders, setFolders] = useState([
+                { id: 'default', name: 'General' },
+                { id: 'phy', name: 'Physics (Class 11)' },
+                { id: 'chem', name: 'Chemistry (Class 11)' },
+                { id: 'math', name: 'Maths (Class 11)' }
+            ]);
+            const [settings, setSettings] = useState({ embedDomain: 'youtube-nocookie' });
+            
+            // --- TIMER STATE ---
+            const [studyTime, setStudyTime] = useState(0); 
+            const [relaxTimeLeft, setRelaxTimeLeft] = useState(0);
+            const [isRelaxMode, setIsRelaxMode] = useState(false);
+            
+            const [activeFolder, setActiveFolder] = useState('all');
+            const [currentVideo, setCurrentVideo] = useState(null);
+            const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+            const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+            const [loading, setLoading] = useState(false);
+            const [error, setError] = useState(null);
+            const [showMobileMenu, setShowMobileMenu] = useState(false);
+
+            // --- LOAD DATA ---
+            useEffect(() => {
+                try {
+                    const saved = localStorage.getItem(STORAGE_KEY);
+                    if (saved) {
+                        const data = JSON.parse(saved);
+                        if (data.videos) setVideos(data.videos);
+                        if (data.folders) setFolders(data.folders);
+                        if (data.settings) setSettings(data.settings);
+                        if (data.timer) {
+                            setStudyTime(data.timer.studyTime || 0);
+                            setRelaxTimeLeft(data.timer.relaxTimeLeft || 0);
+                            setIsRelaxMode(data.timer.isRelaxMode || false);
+                        }
+                    }
+                } catch (e) { 
+                    console.error("Storage load failed, using defaults", e); 
+                }
+            }, []);
+
+            // --- SAVE DATA ---
+            useEffect(() => {
+                try {
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify({ 
+                        videos, folders, settings, 
+                        timer: { studyTime, relaxTimeLeft, isRelaxMode } 
+                    }));
+                } catch (e) {
+                    console.error("Storage save failed", e);
+                }
+            }, [videos, folders, settings, studyTime, relaxTimeLeft, isRelaxMode]);
+
+            // --- TIMER LOGIC (Interval) ---
+            useEffect(() => {
+                let interval = null;
+                // If Relax Mode is active and we have time left
+                if (isRelaxMode && relaxTimeLeft > 0) {
+                    interval = setInterval(() => setRelaxTimeLeft(prev => prev - 1), 1000);
+                } 
+                // If Study Mode, video is playing, and not yet at goal
+                else if (!isRelaxMode && currentVideo && studyTime < STUDY_GOAL_SECONDS) {
+                    interval = setInterval(() => setStudyTime(prev => prev + 1), 1000);
+                }
+                return () => clearInterval(interval);
+            }, [isRelaxMode, relaxTimeLeft, currentVideo, studyTime]);
+
+            // --- TIMER CHECKERS (Side Effects) ---
+            useEffect(() => {
+                // Check if Relax Time is Over
+                if (isRelaxMode && relaxTimeLeft <= 0) {
+                    setIsRelaxMode(false);
+                    setStudyTime(0);
+                    setCurrentVideo(null); // Stop playing relax content
+                }
+                
+                // Check if Study Goal Reached
+                if (!isRelaxMode && studyTime >= STUDY_GOAL_SECONDS) {
+                    setIsRelaxMode(true);
+                    setRelaxTimeLeft(RELAX_DURATION_SECONDS);
+                    setCurrentVideo(null); // Close player to announce break
+                    setStudyTime(0);
+                    alert("🎉 Great job! You've studied for 4 hours. Enjoy 30 minutes of unrestricted Relax Time!");
+                }
+            }, [studyTime, relaxTimeLeft, isRelaxMode]);
+
+
+            // Helper
+            const extractID = (url, type) => {
+                try {
+                    const urlObj = new URL(url);
+                    if (type === 'playlist') return urlObj.searchParams.get('list');
+                    if (url.includes("youtu.be/")) return url.split("youtu.be/")[1].split("?")[0];
+                    return urlObj.searchParams.get('v');
+                } catch(e) { return null; }
+            };
+
+            const handleAddContent = async (url, folderId, inputType) => {
+                setLoading(true);
+                setError(null);
+                try {
+                    const id = extractID(url, inputType);
+                    if (!id) throw new Error(`Invalid ${inputType} URL.`);
+
+                    const oembedUrl = `https://noembed.com/embed?url=${encodeURIComponent(url)}`;
+                    const res = await fetch(oembedUrl);
+                    const meta = await res.json();
+
+                    if (!meta || !meta.title) throw new Error("Could not fetch video details.");
+
+                    const title = meta.title;
+                    const author = meta.author_name || "Unknown Channel";
+                    const thumbnail = inputType === 'playlist' ? (meta.thumbnail_url || "https://i.ytimg.com/img/no_thumbnail.jpg") : (meta.thumbnail_url || `https://img.youtube.com/vi/${id}/mqdefault.jpg`);
+
+                    // Relevance Check
+                    const relevance = checkRelevance(title, author);
+                    let isRelaxContent = false;
+
+                    if (!relevance.allowed) {
+                        if (isRelaxMode) {
+                            // ALLOWED due to relax mode
+                            isRelaxContent = true; 
+                        } else {
+                            // BLOCKED
+                            throw new Error(`BLOCKED: ${relevance.reason} Have you done your lectures today?`);
+                        }
+                    }
+
+                    const newContent = {
+                        id, type: inputType, title, thumbnail, channel: author, folderId,
+                        isRelaxContent, 
+                        addedAt: Date.now()
+                    };
+
+                    setVideos(prev => [newContent, ...prev]);
+                    setIsAddModalOpen(false);
+                } catch (err) { setError(err.message); } 
+                finally { setLoading(false); }
+            };
+
+            const handlePlayVideo = (video) => {
+                // Check if video is restricted (added during relax time) and we are NOT in relax time
+                if (video.isRelaxContent && !isRelaxMode) {
+                    alert("🚫 Relax time is over! This entertainment video is locked until your next break.");
+                    return;
+                }
+                setCurrentVideo(video);
+            };
+
+            const handleDeleteVideo = (id) => { setVideos(videos.filter(v => v.id !== id)); };
+            const filteredVideos = activeFolder === 'all' ? videos : videos.filter(v => v.folderId === activeFolder);
+
+            return (
+                <div className="min-h-screen bg-black text-slate-200 font-sans selection:bg-yellow-500/30">
+                    <div className="md:hidden bg-slate-950 border-b border-slate-900 p-4 flex items-center justify-between sticky top-0 z-30">
+                        <button onClick={() => setShowMobileMenu(true)}><Icons.Menu size={24} /></button>
+                        <span className="font-bold text-yellow-500">FocusJEE</span>
+                        <button onClick={() => setIsAddModalOpen(true)} className="text-yellow-500"><Icons.Plus size={24} /></button>
+                    </div>
+
+                    <Sidebar 
+                        folders={folders} activeFolder={activeFolder} setActiveFolder={setActiveFolder}
+                        onCreateFolder={() => {const n = prompt("Name:"); if(n) setFolders([...folders,{id:Date.now().toString(), name:n}])}}
+                        onDeleteFolder={(id) => setFolders(folders.filter(f=>f.id!==id))}
+                        showMobile={showMobileMenu} onCloseMobile={() => setShowMobileMenu(false)}
+                        onOpenSettings={() => setIsSettingsOpen(true)}
+                        stats={{ studyTime, relaxTimeLeft, isRelaxMode }}
+                    />
+
+                    <div className="md:ml-64 min-h-screen flex flex-col">
+                        <div className={`sticky top-0 z-20 backdrop-blur-xl border-b p-6 flex items-center justify-between transition-colors ${isRelaxMode ? 'bg-green-950/80 border-green-900' : 'bg-black/80 border-slate-900'}`}>
+                            <h1 className="text-2xl font-bold text-white flex items-center gap-2">
+                                {activeFolder === 'all' ? 'Library' : folders.find(f => f.id === activeFolder)?.name}
+                                <span className="text-xs font-normal text-slate-500 bg-slate-900 px-2 py-0.5 rounded-full border border-slate-800">{filteredVideos.length}</span>
+                            </h1>
+                            <button onClick={() => setIsAddModalOpen(true)} className={`text-white px-4 py-2 rounded-lg flex items-center gap-2 font-bold text-sm transition-all shadow-lg ${isRelaxMode ? 'bg-green-600 hover:bg-green-700 shadow-green-600/10' : 'bg-yellow-600 hover:bg-yellow-700 shadow-yellow-600/10'}`}>
+                                <Icons.Plus size={16} /> {isRelaxMode ? 'Add Relax Content' : 'Add Study Content'}
+                            </button>
+                        </div>
+
+                        <div className="p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                            {filteredVideos.length === 0 ? (
+                                <div className="col-span-full py-24 flex flex-col items-center border-2 border-dashed border-slate-900 rounded-2xl">
+                                    <Icons.ListVideo size={48} className="text-slate-800 mb-4" />
+                                    <p className="text-slate-500">No lectures in this folder yet.</p>
+                                </div>
+                            ) : (
+                                filteredVideos.map(video => {
+                                    const isLocked = video.isRelaxContent && !isRelaxMode;
+                                    return (
+                                        <div key={video.id} className={`group bg-slate-950 border rounded-xl overflow-hidden transition-all hover:-translate-y-1 ${isLocked ? 'opacity-50 border-red-900 cursor-not-allowed' : 'border-slate-900 hover:border-yellow-500/50'}`}>
+                                            <div className="relative aspect-video cursor-pointer" onClick={() => handlePlayVideo(video)}>
+                                                <img src={video.thumbnail} alt={video.title} className={`w-full h-full object-cover ${isLocked ? 'grayscale' : ''}`} />
+                                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                                    <div className={`w-12 h-12 rounded-full flex items-center justify-center text-black ${isLocked ? 'bg-red-500' : 'bg-yellow-500'}`}>
+                                                        {isLocked ? <Icons.Lock size={20} /> : (video.type === 'playlist' ? <Icons.List size={20} /> : <Icons.Play fill="currentColor" size={20} className="ml-1" />)}
+                                                    </div>
+                                                </div>
+                                                {video.isRelaxContent && (
+                                                    <div className="absolute top-2 right-2 bg-green-500 text-black text-[9px] font-bold px-1.5 py-0.5 rounded">RELAX CONTENT</div>
+                                                )}
+                                            </div>
+                                            <div className="p-4">
+                                                <h3 className={`text-sm font-medium line-clamp-2 mb-2 h-10 ${isLocked ? 'text-slate-500' : 'text-slate-200'}`} title={video.title}>{video.title}</h3>
+                                                <div className="flex items-center justify-between pt-2 border-t border-slate-900">
+                                                    <span className="text-[10px] text-slate-500 font-bold uppercase tracking-widest truncate max-w-[120px]">{video.channel}</span>
+                                                    <button onClick={() => handleDeleteVideo(video.id)} className="text-slate-600 hover:text-red-500 transition-colors"><Icons.Trash2 size={14} /></button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    );
+                                })
+                            )}
+                        </div>
+                    </div>
+
+                    <VideoPlayer video={currentVideo} onClose={() => setCurrentVideo(null)} embedDomain={settings.embedDomain} isRelaxMode={isRelaxMode} />
+                    <SettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} currentDomain={settings.embedDomain} setDomain={(d) => setSettings({...settings, embedDomain: d})} />
+                    <AddModal isOpen={isAddModalOpen} onClose={() => setIsAddModalOpen(false)} onAdd={handleAddContent} folders={folders} loading={loading} error={error} isRelaxMode={isRelaxMode} />
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
+
+
